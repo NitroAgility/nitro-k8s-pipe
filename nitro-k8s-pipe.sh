@@ -42,7 +42,7 @@ function usage()
     Usage:  $0 -nv -s source_dir -o os
                 -n     dry run, don't make any changes
                 -v     verbose output
-                -s     source directory defaults to $source)
+                -s     source directory (defaults to $source)
                 -i     override infrastructure (defaults to $infrastructure)
                 -o     override operating system (defaults to $os)
                 -h     display this message
