@@ -22,4 +22,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-docker build -t j4sci . && docker run j4sci
+docker build -t j4sci . \
+    --build-arg aws_access_key=${AWS_ACCESS_KEY} \
+    --build-arg aws_secret_access_key=${AWS_SECRET_ACCESS_KEY} && docker run j4sci

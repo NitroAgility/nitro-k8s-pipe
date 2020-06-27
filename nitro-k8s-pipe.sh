@@ -101,13 +101,13 @@ function aws_install(){
 }
 
 function aws_configure(){
-    log_trace "installing awscli v2"
+    log_trace "configuring the aws cli"
     aws configure set aws_access_key_id $PIPE_AWS_ACCESS_KEY
     aws configure set aws_secret_access_key $PIPE_AWS_SECRET_ACCESS_KEY
 }
 
 function aws_configure_eks(){
-    log_trace "installing awscli v2"
+    log_trace "configuring kubeclt to connect to the aws eks cluster"
     aws eks --region eu-west-2 update-kubeconfig --name jobs4k-eks-EvydAE8P
 }
 
@@ -128,11 +128,15 @@ function process_args() {
     done
 }
 
+function run(){
+    os_tools_install
+    k8s_install_client
+    helm_install
+    aws_install
+    aws_configure
+    aws_configure_eks
+    helm_deploy
+}
+
 process_args "$@"
-os_tools_install
-k8s_install_client
-helm_install
-aws_install
-aws_configure
-aws_configure_eks
-helm_deploy
+run
