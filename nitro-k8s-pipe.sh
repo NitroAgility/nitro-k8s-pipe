@@ -38,7 +38,6 @@ function usage()
     \_)__)(__) (__) (__\_) \__/     (__\_)\____/(____/    (__)  (__)(__)  (____)
                                                               by Nitro Agility ©
 
-
     Usage:  $0 -nv -s source_dir -o os
                 -n     dry run, don't make any changes
                 -v     verbose output
