@@ -130,3 +130,9 @@ function process_args() {
 
 process_args "$@"
 os_tools_install
+k8s_install_client
+helm_install
+aws_install
+aws_configure
+aws_configure_eks
+helm_deploy
