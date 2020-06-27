@@ -36,7 +36,8 @@ function usage()
     (  ( \(  )(_  _)(  _ \ /  \  ___(  / )/ _  \/ ___) ___(  _ \(  )(  _ \(  __)
     /    / )(   )(   )   /(  O )(___))  ( ) _  (\___ \(___)) __/ )(  ) __/ ) _) 
     \_)__)(__) (__) (__\_) \__/     (__\_)\____/(____/    (__)  (__)(__)  (____)
-                                                              by Nitro Agility ©
+
+                                                  Copyright © 2020 Nitro Agility
 
     Usage:  $0 -nv -s source_dir -o os
                 -n     dry run, don't make any changes
