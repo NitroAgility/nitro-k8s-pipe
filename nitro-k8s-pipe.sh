@@ -2,7 +2,7 @@
 
 # MIT License
 # 
-# Copyright (c) 2020 Nitro Agility
+# Copyright (c) 2020 Nitro Agility Srl
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -38,7 +38,7 @@ function usage()
     Usage:  $0 -nv -s source_dir -o os
                 -n     dry run, don't make any changes
                 -s     source directory. Defaults to $thisdir
-                -i     override target infrastructure (defaults to $infrastructure)
+                -i     override infrastructure (defaults to $infrastructure)
                 -o     override operating system (defaults to $os)
                 -v     verbose output
                 -h     display this message
@@ -64,7 +64,7 @@ function log_trace(){
     fi
 }
 
-function install_os_tools(){
+function os_tools_install(){
     log_trace "preparing for installation"
     apt update
     log_trace "installing curl"
@@ -73,21 +73,21 @@ function install_os_tools(){
     apt-get install -y unzip
 }
 
-function install_k8s(){
+function k8s_install_client(){
     log_trace "installing kubectl"
     curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
     chmod +x ./kubectl
     mv ./kubectl /usr/local/bin
 }
 
-function install_helm(){
+function helm_install(){
     log_trace "installing helm"
     curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
     chmod 700 get_helm.sh
     ./get_helm.sh 
 }
 
-function install_awscli(){
+function aws_install(){
     log_trace "installing awscli v2"
     curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
     unzip awscliv2.zip
@@ -100,13 +100,13 @@ function install_awscli(){
     echo 'export PATH=$PATH:$HOME/bin' >> ~/.bashrc
 }
 
-function configure_aws(){
+function aws_configure(){
     log_trace "installing awscli v2"
     aws configure set aws_access_key_id $PIPE_AWS_ACCESS_KEY
     aws configure set aws_secret_access_key $PIPE_AWS_SECRET_ACCESS_KEY
 }
 
-function configure_aws_eks(){
+function aws_configure_eks(){
     log_trace "installing awscli v2"
     aws eks --region eu-west-2 update-kubeconfig --name jobs4k-eks-EvydAE8P
 }
@@ -129,4 +129,4 @@ function process_args() {
 }
 
 process_args "$@"
-install_os_tools
+os_tools_install
