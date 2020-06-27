@@ -22,9 +22,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+dryRun=0
 verbose=0
-os=linux
+os=ubuntu
 infrastructure=aws
+source=$(pwd)
 operation=
 
 function usage()
@@ -37,10 +39,10 @@ function usage()
 
     Usage:  $0 -nv -s source_dir -o os
                 -n     dry run, don't make any changes
-                -s     source directory. Defaults to $thisdir
+                -v     verbose output
+                -s     source directory defaults to $source)
                 -i     override infrastructure (defaults to $infrastructure)
                 -o     override operating system (defaults to $os)
-                -v     verbose output
                 -h     display this message
 
 END
@@ -119,9 +121,9 @@ function helm_deploy(){
 function process_args() {
     while getopts ":s:r:nvh" flag; do
         case $flag in
-            s) echo "source ${OPTARG%/}" ;;
+            s) source="${OPTARG%/}" ;;
             r) operation="${OPTARG}" ;;
-            n) echo "dry run${OPTARG}" ;;
+            n) dryRun=1 ;;
             v) verbose=1;;
             h) usage ; exit 1 ;;
         esac
