@@ -24,14 +24,18 @@ FROM ubuntu:18.04
 # Arguments
 ARG PIPE_AWS_ACCESS_KEY=
 ARG PIPE_AWS_SECRET_ACCESS_KEY=
+ARG PIPE_OPTIONS=
 
 # Environment variables
 ENV PIPE_AWS_ACCESS_KEY $PIPE_AWS_ACCESS_KEY
 ENV PIPE_AWS_SECRET_ACCESS_KEY $PIPE_AWS_SECRET_ACCESS_KEY
+ENV PIPE_OPTIONS $PIPE_OPTIONS
+
+RUN echo "2 $PIPE_OPTIONS"
 
 # Copy files and run the configuration
 COPY . .
-RUN bash ./nitro_k8s_pipe.sh -v
+RUN bash ./nitro_k8s_pipe.sh $PIPE_OPTIONS
 
 # Run the check command
 CMD kubectl get pods -n dev
