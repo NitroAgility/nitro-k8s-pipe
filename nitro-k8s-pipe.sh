@@ -134,7 +134,7 @@ function process_args() {
         case "$1" in
             -n | --dry-run) dry_run=1; shift ;;
             -v | --verbose) verbose=1; shift ;;
-            -s | --source) source="$2"; shift 2 ;;
+            -s | --source) source=${2%/}; shift 2 ;;
             -t | --task) task="$2"; shift 2 ;;
             -i | --install) install=1; shift ;;
             --os) os="$2"; shift 2 ;;
@@ -152,19 +152,20 @@ function run_tasks(){
         task_os_tools_install
         task_k8s_tools_install
         task_helm_install
+        case $infrastructure in
+            aws)
+                log_trace "configuring aws infrastructure"
+                task_aws_cli_install
+                task_aws_cli_configure
+                task_aws_eks_configure ;;
+            *) log_error "infrastructure $infrastructure is not supported" ; exit 1 ;;
+        esac
     fi
-    case $infrastructure in
-        aws)
-            log_trace "configuring aws infrastructure"
-            task_aws_cli_install
-            task_aws_cli_configure
-            task_aws_eks_configure ;;
-        *) log_error "infrastructure $infrastructure is not supported" ; exit 1 ;;
-    esac
     task_helm_deploy
 }
 
 # process the input arguments
 process_args "$@"
 # run the tasks
-#run_tasks
+echo $source
+run_tasks
