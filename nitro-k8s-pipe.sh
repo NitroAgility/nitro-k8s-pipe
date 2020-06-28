@@ -44,15 +44,19 @@ function usage()
 
                                                   Copyright © 2020 Nitro Agility
 
-    Usage:  $0 -nv -s source_dir -o os
-                -n, --dry-run       dry run, don't make any changes
-                -v, --verbose       verbose output
-                -s, --source        source directory (defaults to $source)
-                -t, --task          task to be executed (defaults to $task)
-                -i, --install       install required tools
-                --os                override operating system (defaults to $os)
-                --infrastructure    override infrastructure (defaults to $infrastructure)
-                -h, --help          display this message
+    Usage:  $0 -nv --source source_dir --chart my_chart
+                -n, --dry-run           dry run, don't make any changes
+                -v, --verbose           verbose output
+                -s, --source            source directory (defaults to $source)
+                -i, --install-tools     install required tools
+                --os                    override operating system (defaults to $os)
+                --infrastructure        override infrastructure (defaults to $infrastructure)
+                --cluster               kubernetes cluster name
+                --chart                 helm chart name [required option]
+                --release               helm release name (defaults to the chart name)
+                --namespace             helm namespace
+                --uninstall             uninstall the helm chart
+                -h, --help              display this message
 
 END
 }
@@ -119,7 +123,7 @@ function task_aws_cli_configure(){
 
 function task_aws_eks_configure(){
     log_trace "configuring kubeclt to connect to the aws eks cluster"
-    aws eks --region eu-west-2 update-kubeconfig --name jobs4k-eks-EvydAE8P
+    aws eks --region eu-west-2 update-kubeconfig --name $k8s_cluster
 }
 
 function task_helm_deploy(){
