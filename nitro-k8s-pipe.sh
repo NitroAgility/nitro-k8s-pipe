@@ -167,10 +167,4 @@ function run_tasks(){
 # process the input arguments
 process_args "$@"
 # run the tasks
-log_error "Hey errror 1"
-log_trace "Trace 1"
-log_warning "Warning 1"
-log_info $infrastructure
-log_info $task
-log_info $source
 #run_tasks
