@@ -24,11 +24,15 @@
 
 dry_run=0
 verbose=0
-os=ubuntu
-infrastructure=aws
 source=$(pwd)
 install=0
-task=deploy
+os=ubuntu
+infrastructure=aws
+k8s_cluster=
+helm_chart=
+helm_release_name=
+helm_release_namespace=
+helm_install=1
 
 function usage()
 {
@@ -119,14 +123,27 @@ function task_aws_eks_configure(){
 }
 
 function task_helm_deploy(){
-    log_trace "deploying chart $chart"
-    helm upgrade --install jobs4k ./chart/"$chart"/ --set environment=dev -n dev
+    if [[ $helm_install -eq 1 ]]; then
+        log_trace "installing chart $helm_chart"
+        if [[ $helm_release_namespace ]]; then
+            helm upgrade --install $helm_release_name "$source/chart/$helm_chart" -n $helm_release_namespace
+        else
+            helm upgrade --install $helm_release_name "$source/chart/$helm_chart"
+        fi
+    else
+        log_trace "uninstalling chart $helm_chart"
+        if [[ $helm_release_namespace ]]; then
+            helm uninstall $helm_release_name -n $helm_release_namespace
+        else
+            helm uninstall $helm_release_name
+        fi
+    fi
 }
 
 function process_args() {
     # parse options
-    SHORT=s:t:nvh:
-    LONG=dry-run,verbose,help,install,source:,task:,os:,infrastructure:
+    SHORT=nvs:io:h
+    LONG=dry-run,verbose,help,install-tools,source:,os:,infrastructure:,cluster:,chart:,release:,namespace:,uninstall
     OPTS=$(getopt --options $SHORT --long $LONG --name "$0" -- "$@")
     if [ $? != 0 ] ; then log_error "Failed to parse options" >&2 ; exit 1 ; fi
     eval set -- "$OPTS"
@@ -135,15 +152,21 @@ function process_args() {
             -n | --dry-run) dry_run=1; shift ;;
             -v | --verbose) verbose=1; shift ;;
             -s | --source) source=${2%/}; shift 2 ;;
-            -t | --task) task="$2"; shift 2 ;;
-            -i | --install) install=1; shift ;;
+            -i | --install-tools) install=1; shift ;;
             --os) os="$2"; shift 2 ;;
             --infrastructure) infrastructure="$2"; shift 2 ;;
+            --cluster) k8s_cluster="$2"; shift 2 ;;
+            --chart) helm_chart="$2"; shift 2 ;;
+            --release) helm_release_name="$2"; shift 2 ;;
+            --namespace) helm_release_namespace="$2"; shift 2 ;;
+            --uninstall) helm_install=0; shift 2 ;;
             -h | --help) usage ; exit 1; shift ;;
             -- ) shift; break ;;
             * ) break ;;
         esac
     done
+    [[ $helm_chart ]] ||  { log_error "helm chart is a required" >&2; exit 1; }
+    [[ $helm_release_name ]] || helm_release_name=$helm_chart
 }
 
 function run_tasks(){
@@ -158,7 +181,7 @@ function run_tasks(){
                 task_aws_cli_install
                 task_aws_cli_configure
                 task_aws_eks_configure ;;
-            *) log_error "infrastructure $infrastructure is not supported" ; exit 1 ;;
+            *) log_error "infrastructure $infrastructure is not supported" >&2 ; exit 1 ;;
         esac
     fi
     task_helm_deploy
@@ -167,5 +190,4 @@ function run_tasks(){
 # process the input arguments
 process_args "$@"
 # run the tasks
-echo $source
 run_tasks
