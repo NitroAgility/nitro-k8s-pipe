@@ -23,7 +23,7 @@
 # SOFTWARE.
 
 option="$@"
-docker build -t k8s-pipe . \
+docker build --file NitroDockerfile -t k8s-pipe . \
     --build-arg PIPE_AWS_ACCESS_KEY="${AWS_ACCESS_KEY}" \
     --build-arg PIPE_AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} \
     --build-arg PIPE_OPTIONS="$option --" && docker run k8s-pipe

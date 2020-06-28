@@ -22,6 +22,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+# Core variables
 dry_run=0
 verbose=0
 source=$(pwd)
@@ -33,6 +34,10 @@ helm_chart=
 helm_release_name=
 helm_release_namespace=
 helm_install=1
+
+# AWS variables
+aws_key=$PIPE_AWS_ACCESS_KEY
+aws_secret=$PIPE_AWS_SECRET_ACCESS_KEY
 
 function usage()
 {
@@ -57,6 +62,10 @@ function usage()
                 --namespace             helm namespace
                 --uninstall             uninstall the helm chart
                 -h, --help              display this message
+            there are custom options for each infrastructure type.
+                aws:
+                    --aws-key           aws access key id [required option]
+                    --aws-secret        aws secret access key [required option]
 
 END
 }
@@ -117,8 +126,11 @@ function task_aws_cli_install(){
 
 function task_aws_cli_configure(){
     log_trace "configuring the aws cli"
-    aws configure set aws_access_key_id $PIPE_AWS_ACCESS_KEY
-    aws configure set aws_secret_access_key $PIPE_AWS_SECRET_ACCESS_KEY
+    echo "bullshit"
+    echo $aws_key
+    echo $aws_secret
+    aws configure set aws_access_key_id $aws_key
+    aws configure set aws_secret_access_key $aws_secret
 }
 
 function task_aws_eks_configure(){
@@ -147,7 +159,7 @@ function task_helm_deploy(){
 function process_args() {
     # parse options
     SHORT=nvs:io:h
-    LONG=dry-run,verbose,help,install-tools,source:,os:,infrastructure:,cluster:,chart:,release:,namespace:,uninstall
+    LONG=dry-run,verbose,help,install-tools,source:,os:,infrastructure:,cluster:,chart:,release:,namespace:,uninstall,aws-key:,aws-secret:
     OPTS=$(getopt --options $SHORT --long $LONG --name "$0" -- "$@")
     if [ $? != 0 ] ; then log_error "Failed to parse options" >&2 ; exit 1 ; fi
     eval set -- "$OPTS"
@@ -164,6 +176,8 @@ function process_args() {
             --release) helm_release_name="$2"; shift 2 ;;
             --namespace) helm_release_namespace="$2"; shift 2 ;;
             --uninstall) helm_install=0; shift 2 ;;
+            --aws-key) aws_key="$2"; shift 2 ;;
+            --aws-secret) aws_secret="$2"; shift 2 ;;
             -h | --help) usage ; exit 1; shift ;;
             -- ) shift; break ;;
             * ) break ;;
