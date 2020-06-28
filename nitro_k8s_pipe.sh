@@ -126,9 +126,6 @@ function task_aws_cli_install(){
 
 function task_aws_cli_configure(){
     log_trace "configuring the aws cli"
-    echo "bullshit"
-    echo $aws_key
-    echo $aws_secret
     aws configure set aws_access_key_id $aws_key
     aws configure set aws_secret_access_key $aws_secret
 }
