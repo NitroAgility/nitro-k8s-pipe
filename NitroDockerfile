@@ -36,4 +36,4 @@ COPY . .
 RUN bash ./nitro_k8s_pipe.sh $PIPE_OPTIONS
 
 # Run the check command
-CMD kubectl get pods -n dev
+CMD echo "Copyright (c) 2020 Nitro Agility Srl"
