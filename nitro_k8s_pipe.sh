@@ -61,6 +61,7 @@ function usage()
                 --release               helm release name (defaults to the chart name)
                 --namespace             helm namespace
                 --uninstall             uninstall the helm chart
+                --pre-deploy            script to be executed before of the deploy [base64]
                 -h, --help              display this message
             there are custom options for each infrastructure type.
                 aws:
@@ -156,7 +157,7 @@ function task_helm_deploy(){
 function process_args() {
     # parse options
     SHORT=nvs:io:h
-    LONG=dry-run,verbose,help,install-tools,source:,os:,infrastructure:,cluster:,chart:,release:,namespace:,uninstall,aws-key:,aws-secret:
+    LONG=dry-run,verbose,help,install-tools,source:,os:,infrastructure:,cluster:,chart:,release:,namespace:,uninstall,pre-deploy:,aws-key:,aws-secret:
     OPTS=$(getopt --options $SHORT --long $LONG --name "$0" -- "$@")
     if [ $? != 0 ] ; then log_error "Failed to parse options" >&2 ; exit 1 ; fi
     eval set -- "$OPTS"
@@ -172,7 +173,8 @@ function process_args() {
             --chart) helm_chart="$2"; shift 2 ;;
             --release) helm_release_name="$2"; shift 2 ;;
             --namespace) helm_release_namespace="$2"; shift 2 ;;
-            --uninstall) helm_install=0; shift 2 ;;
+            --uninstall) helm_install=0; shift ;;
+            --pre-deploy) pre_deploy=$(echo "$2" | base64 --decode); shift 2 ;;
             --aws-key) aws_key="$2"; shift 2 ;;
             --aws-secret) aws_secret="$2"; shift 2 ;;
             -h | --help) usage ; exit 1; shift ;;
@@ -199,6 +201,7 @@ function run_tasks(){
             *) log_error "infrastructure $infrastructure is not supported" >&2 ; exit 1 ;;
         esac
     fi
+    [ ! $pre_deploy ] || eval $pre_deploy
     task_helm_deploy
 }
 
