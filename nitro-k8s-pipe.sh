@@ -22,12 +22,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-dryRun=0
+dry_run=0
 verbose=0
 os=ubuntu
 infrastructure=aws
 source=$(pwd)
-operation=
+install=0
+task=deploy
 
 function usage()
 {
@@ -40,12 +41,14 @@ function usage()
                                                   Copyright © 2020 Nitro Agility
 
     Usage:  $0 -nv -s source_dir -o os
-                -n     dry run, don't make any changes
-                -v     verbose output
-                -s     source directory (defaults to $source)
-                -i     override infrastructure (defaults to $infrastructure)
-                -o     override operating system (defaults to $os)
-                -h     display this message
+                -n, --dry-run       dry run, don't make any changes
+                -v, --verbose       verbose output
+                -s, --source        source directory (defaults to $source)
+                -t, --task          task to be executed (defaults to $task)
+                -i, --install       install required tools
+                --os                override operating system (defaults to $os)
+                --infrastructure    override infrastructure (defaults to $infrastructure)
+                -h, --help          display this message
 
 END
 }
@@ -68,7 +71,7 @@ function log_trace(){
     fi
 }
 
-function os_tools_install(){
+function task_os_tools_install(){
     log_trace "preparing for installation"
     apt update
     log_trace "installing curl"
@@ -77,21 +80,21 @@ function os_tools_install(){
     apt-get install -y unzip
 }
 
-function k8s_install_client(){
+function task_k8s_tools_install(){
     log_trace "installing kubectl"
     curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
     chmod +x ./kubectl
     mv ./kubectl /usr/local/bin
 }
 
-function helm_install(){
+function task_helm_install(){
     log_trace "installing helm"
     curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
     chmod 700 get_helm.sh
     ./get_helm.sh 
 }
 
-function aws_install(){
+function task_aws_cli_install(){
     log_trace "installing awscli v2"
     curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
     unzip awscliv2.zip
@@ -104,43 +107,70 @@ function aws_install(){
     echo 'export PATH=$PATH:$HOME/bin' >> ~/.bashrc
 }
 
-function aws_configure(){
+function task_aws_cli_configure(){
     log_trace "configuring the aws cli"
     aws configure set aws_access_key_id $PIPE_AWS_ACCESS_KEY
     aws configure set aws_secret_access_key $PIPE_AWS_SECRET_ACCESS_KEY
 }
 
-function aws_configure_eks(){
+function task_aws_eks_configure(){
     log_trace "configuring kubeclt to connect to the aws eks cluster"
     aws eks --region eu-west-2 update-kubeconfig --name jobs4k-eks-EvydAE8P
 }
 
-function helm_deploy(){
+function task_helm_deploy(){
     log_trace "deploying chart $chart"
     helm upgrade --install jobs4k ./chart/"$chart"/ --set environment=dev -n dev
 }
 
 function process_args() {
-    while getopts ":s:r:nvh" flag; do
-        case $flag in
-            s) source="${OPTARG%/}" ;;
-            r) operation="${OPTARG}" ;;
-            n) dryRun=1 ;;
-            v) verbose=1;;
-            h) usage ; exit 1 ;;
+    # parse options
+    SHORT=s:t:nvh:
+    LONG=dry-run,verbose,help,install,source:,task:,os:,infrastructure:
+    OPTS=$(getopt --options $SHORT --long $LONG --name "$0" -- "$@")
+    if [ $? != 0 ] ; then log_error "Failed to parse options" >&2 ; exit 1 ; fi
+    eval set -- "$OPTS"
+    while true; do
+        case "$1" in
+            -n | --dry-run) dry_run=1; shift ;;
+            -v | --verbose) verbose=1; shift ;;
+            -s | --source) source="$2"; shift 2 ;;
+            -t | --task) task="$2"; shift 2 ;;
+            -i | --install) install=1; shift ;;
+            --os) os="$2"; shift 2 ;;
+            --infrastructure) infrastructure="$2"; shift 2 ;;
+            -h | --help) usage ; exit 1; shift ;;
+            -- ) shift; break ;;
+            * ) break ;;
         esac
     done
 }
 
-function run(){
-    os_tools_install
-    k8s_install_client
-    helm_install
-    aws_install
-    aws_configure
-    aws_configure_eks
-    helm_deploy
+function run_tasks(){
+    if [[ install -eq 1 ]]; then
+        log_trace "insalling required tools"
+        task_os_tools_install
+        task_k8s_tools_install
+        task_helm_install
+    fi
+    case $infrastructure in
+        aws)
+            log_trace "configuring aws infrastructure"
+            task_aws_cli_install
+            task_aws_cli_configure
+            task_aws_eks_configure ;;
+        *) log_error "infrastructure $infrastructure is not supported" ; exit 1 ;;
+    esac
+    task_helm_deploy
 }
 
+# process the input arguments
 process_args "$@"
-run
+# run the tasks
+log_error "Hey errror 1"
+log_trace "Trace 1"
+log_warning "Warning 1"
+log_info $infrastructure
+log_info $task
+log_info $source
+#run_tasks

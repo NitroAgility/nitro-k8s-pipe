@@ -31,7 +31,7 @@ ENV PIPE_AWS_SECRET_ACCESS_KEY $PIPE_AWS_SECRET_ACCESS_KEY
 
 # Copy files and run the configuration
 COPY . .
-RUN bash ./nitro-k8s-pipe.sh -v
+RUN bash ./nitro_k8s_pipe.sh -v
 
 # Run the check command
 CMD kubectl get pods -n dev
