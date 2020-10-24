@@ -27,6 +27,7 @@ dry_run=0
 verbose=0
 source=$(pwd)
 install=0
+build_number=0
 os=ubuntu
 infrastructure=aws
 k8s_cluster=
@@ -131,9 +132,22 @@ function task_aws_cli_configure(){
     aws configure set aws_secret_access_key $aws_secret
 }
 
+function task_aws_ecr_configure(){
+    log_trace "configuring to connect to the aws docker registry"
+    aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin 676276728050.dkr.ecr.eu-west-2.amazonaws.com
+}
+
 function task_aws_eks_configure(){
     log_trace "configuring kubeclt to connect to the aws eks cluster"
     aws eks --region eu-west-2 update-kubeconfig --name $k8s_cluster
+}
+
+function task_docker_deploy(){
+    docker build -t axsfs-crm-backend:latest . --build-arg JFROG_USERNAME=${JFROG_USERNAME} --build-arg JFROG_PASSWORD=${JFROG_PASSWORD}
+    docker tag axsfs-crm-backend:latest 676276728050.dkr.ecr.eu-west-2.amazonaws.com/axsfs-crm-backend:latest
+    docker push 676276728050.dkr.ecr.eu-west-2.amazonaws.com/axsfs-crm-backend:latest
+    docker tag axsfs-crm-backend:latest 676276728050.dkr.ecr.eu-west-2.amazonaws.com/axsfs-crm-backend:$build_number
+    docker push 676276728050.dkr.ecr.eu-west-2.amazonaws.com/axsfs-crm-backend:$build_number
 }
 
 function task_helm_deploy(){
@@ -157,7 +171,7 @@ function task_helm_deploy(){
 function process_args() {
     # parse options
     SHORT=nvs:io:h
-    LONG=dry-run,verbose,help,install-tools,source:,os:,infrastructure:,cluster:,chart:,release:,namespace:,uninstall,pre-deploy:,aws-key:,aws-secret:
+    LONG=dry-run,verbose,help,install-tools,source:,build-number:,os:,infrastructure:,cluster:,chart:,release:,namespace:,uninstall,pre-deploy:,aws-key:,aws-secret:
     OPTS=$(getopt --options $SHORT --long $LONG --name "$0" -- "$@")
     if [ $? != 0 ] ; then log_error "Failed to parse options" >&2 ; exit 1 ; fi
     eval set -- "$OPTS"
@@ -167,6 +181,7 @@ function process_args() {
             -v | --verbose) verbose=1; shift ;;
             -s | --source) source=${2%/}; shift 2 ;;
             -i | --install-tools) install=1; shift ;;
+            --build-number) build_number="$2"; shift 2 ;;
             --os) os="$2"; shift 2 ;;
             --infrastructure) infrastructure="$2"; shift 2 ;;
             --cluster) k8s_cluster="$2"; shift 2 ;;
@@ -197,10 +212,12 @@ function run_tasks(){
                 log_trace "configuring aws infrastructure"
                 task_aws_cli_install
                 task_aws_cli_configure
+                task_aws_ecr_configure
                 task_aws_eks_configure ;;
             *) log_error "infrastructure $infrastructure is not supported" >&2 ; exit 1 ;;
         esac
     fi
+    task_docker_deploy
     [ ! $pre_deploy ] || eval $pre_deploy
     task_helm_deploy
 }
