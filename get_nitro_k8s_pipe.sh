@@ -164,9 +164,9 @@ function task_helm_deploy(){
     if [[ $helm_install -eq 1 ]]; then
         log_trace "installing chart $helm_chart"
         if [[ $helm_release_namespace ]]; then
-            helm upgrade --install $helm_release_name "$source/chart/$helm_chart" -n $helm_release_namespace
+            helm upgrade --install $helm_release_name "$source/chart/$helm_chart" --set app.tag=$build_number -n $helm_release_namespace
         else
-            helm upgrade --install $helm_release_name "$source/chart/$helm_chart"
+            helm upgrade --install $helm_release_name "$source/chart/$helm_chart" --set app.tag=$build_number
         fi
     else
         log_trace "uninstalling chart $helm_chart"
