@@ -28,6 +28,9 @@ verbose=0
 source=$(pwd)
 install=0
 build_number=0
+docker_build_args=
+docker_registry=
+docker_registry_name=
 os=ubuntu
 infrastructure=aws
 k8s_cluster=
@@ -57,6 +60,10 @@ function usage()
                 -i, --install-tools     install required tools
                 --os                    override operating system (defaults to $os)
                 --infrastructure        override infrastructure (defaults to $infrastructure)
+                --build-number          build number
+                --docker-build-args      docker build arguments
+                --docker-registry       docker registry url
+                --docker-registry-name  docker registry name
                 --cluster               kubernetes cluster name
                 --chart                 helm chart name [required option]
                 --release               helm release name (defaults to the chart name)
@@ -66,9 +73,8 @@ function usage()
                 -h, --help              display this message
             there are custom options for each infrastructure type.
                 aws:
-                    --aws-key           aws access key id [required option]
-                    --aws-secret        aws secret access key [required option]
-
+                    --aws-key               aws access key id [required option]
+                    --aws-secret            aws secret access key [required option]
 END
 }
 
@@ -134,7 +140,7 @@ function task_aws_cli_configure(){
 
 function task_aws_ecr_configure(){
     log_trace "configuring to connect to the aws docker registry"
-    aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin 676276728050.dkr.ecr.eu-west-2.amazonaws.com
+    aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin $docker_registry
 }
 
 function task_aws_eks_configure(){
@@ -143,20 +149,24 @@ function task_aws_eks_configure(){
 }
 
 function task_docker_deploy(){
-    docker build -t axsfs-crm-backend:latest . --build-arg JFROG_USERNAME=${JFROG_USERNAME} --build-arg JFROG_PASSWORD=${JFROG_PASSWORD}
-    docker tag axsfs-crm-backend:latest 676276728050.dkr.ecr.eu-west-2.amazonaws.com/axsfs-crm-backend:latest
-    docker push 676276728050.dkr.ecr.eu-west-2.amazonaws.com/axsfs-crm-backend:latest
-    docker tag axsfs-crm-backend:latest 676276728050.dkr.ecr.eu-west-2.amazonaws.com/axsfs-crm-backend:$build_number
-    docker push 676276728050.dkr.ecr.eu-west-2.amazonaws.com/axsfs-crm-backend:$build_number
+    if [[ $docker_build_args ]]; then
+        eval "docker build -t $docker_registry_name:latest . $docker_build_args"
+    else
+        docker build -t $docker_registry_name:latest .
+    fi
+    docker tag $docker_registry_name:latest $docker_registry/$docker_registry_name:latest
+    docker push $docker_registry/$docker_registry_name:latest
+    docker tag $docker_registry_name:latest $docker_registry/$docker_registry_name:$build_number
+    docker push $docker_registry/$docker_registry_name:$build_number
 }
 
 function task_helm_deploy(){
     if [[ $helm_install -eq 1 ]]; then
         log_trace "installing chart $helm_chart"
         if [[ $helm_release_namespace ]]; then
-            helm upgrade --install $helm_release_name "$source/chart/$helm_chart" -n $helm_release_namespace
+            helm upgrade --install $helm_release_name "$source/chart/$helm_chart" --set app.tag=$build_number -n $helm_release_namespace
         else
-            helm upgrade --install $helm_release_name "$source/chart/$helm_chart"
+            helm upgrade --install $helm_release_name "$source/chart/$helm_chart" --set app.tag=$build_number
         fi
     else
         log_trace "uninstalling chart $helm_chart"
@@ -171,7 +181,7 @@ function task_helm_deploy(){
 function process_args() {
     # parse options
     SHORT=nvs:io:h
-    LONG=dry-run,verbose,help,install-tools,source:,build-number:,os:,infrastructure:,cluster:,chart:,release:,namespace:,uninstall,pre-deploy:,aws-key:,aws-secret:
+    LONG=dry-run,verbose,help,install-tools,source:,build-number:,docker-build-args:,docker-registry:,docker-registry-name:,os:,infrastructure:,cluster:,chart:,release:,namespace:,uninstall,pre-deploy:,aws-key:,aws-secret:
     OPTS=$(getopt --options $SHORT --long $LONG --name "$0" -- "$@")
     if [ $? != 0 ] ; then log_error "Failed to parse options" >&2 ; exit 1 ; fi
     eval set -- "$OPTS"
@@ -182,6 +192,9 @@ function process_args() {
             -s | --source) source=${2%/}; shift 2 ;;
             -i | --install-tools) install=1; shift ;;
             --build-number) build_number="$2"; shift 2 ;;
+            --docker-build-args) docker_build_args=$(echo "$2" | base64 --decode); shift 2 ;;
+            --docker-registry) docker_registry="$2"; shift 2 ;;
+            --docker-registry-name) docker_registry_name="$2"; shift 2 ;;
             --os) os="$2"; shift 2 ;;
             --infrastructure) infrastructure="$2"; shift 2 ;;
             --cluster) k8s_cluster="$2"; shift 2 ;;
