@@ -30,6 +30,7 @@ install=0
 push_container=0
 deploy=0
 build_number=0
+docker_file=
 docker_build_args=
 docker_registry=
 docker_registry_name=
@@ -65,7 +66,8 @@ function usage()
                 --os                    override operating system (defaults to $os)
                 --infrastructure        override infrastructure (defaults to $infrastructure)
                 --build-number          build number
-                --docker-build-args      docker build arguments
+                --docker-file           docker file
+                --docker-build-args     docker build arguments
                 --docker-registry       docker registry url
                 --docker-registry-name  docker registry name
                 --cluster               kubernetes cluster name
@@ -153,6 +155,10 @@ function task_aws_eks_configure(){
 }
 
 function task_docker_deploy(){
+    if [-z "$docker_build_args" ]; then
+        docker_file = "./Dockerfile"
+    fi
+    log_trace "Dockerfile $docker_file"
     if [[ $docker_build_args ]]; then
         eval "docker build -t $docker_registry_name:latest . $docker_build_args"
     else
@@ -198,6 +204,7 @@ function process_args() {
             --push-container) push_container=1; shift ;;
             --deploy) deploy=1; shift ;;
             --build-number) build_number="$2"; shift 2 ;;
+            --docker-file) docker_file="$2"; shift 2 ;
             --docker-build-args) docker_build_args=$(echo "$2" | base64 --decode); shift 2 ;;
             --docker-registry) docker_registry="$2"; shift 2 ;;
             --docker-registry-name) docker_registry_name="$2"; shift 2 ;;
