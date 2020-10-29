@@ -27,6 +27,8 @@ dry_run=0
 verbose=0
 source=$(pwd)
 install=0
+push_container=0
+deploy=0
 build_number=0
 docker_build_args=
 docker_registry=
@@ -58,6 +60,8 @@ function usage()
                 -v, --verbose           verbose output
                 -s, --source            source directory (defaults to $source)
                 -i, --install-tools     install required tools
+                --push-container        push the container
+                --deploy                deploy the container
                 --os                    override operating system (defaults to $os)
                 --infrastructure        override infrastructure (defaults to $infrastructure)
                 --build-number          build number
@@ -181,7 +185,7 @@ function task_helm_deploy(){
 function process_args() {
     # parse options
     SHORT=nvs:io:h
-    LONG=dry-run,verbose,help,install-tools,source:,build-number:,docker-build-args:,docker-registry:,docker-registry-name:,os:,infrastructure:,cluster:,chart:,release:,namespace:,uninstall,pre-deploy:,aws-key:,aws-secret:
+    LONG=dry-run,verbose,help,install-tools,push-container,deploy,source:,build-number:,docker-build-args:,docker-registry:,docker-registry-name:,os:,infrastructure:,cluster:,chart:,release:,namespace:,uninstall,pre-deploy:,aws-key:,aws-secret:
     OPTS=$(getopt --options $SHORT --long $LONG --name "$0" -- "$@")
     if [ $? != 0 ] ; then log_error "Failed to parse options" >&2 ; exit 1 ; fi
     eval set -- "$OPTS"
@@ -191,6 +195,8 @@ function process_args() {
             -v | --verbose) verbose=1; shift ;;
             -s | --source) source=${2%/}; shift 2 ;;
             -i | --install-tools) install=1; shift ;;
+            --push-container) push_container=1; shift ;;
+            --deploy) deploy=1; shift ;;
             --build-number) build_number="$2"; shift 2 ;;
             --docker-build-args) docker_build_args=$(echo "$2" | base64 --decode); shift 2 ;;
             --docker-registry) docker_registry="$2"; shift 2 ;;
@@ -230,9 +236,15 @@ function run_tasks(){
             *) log_error "infrastructure $infrastructure is not supported" >&2 ; exit 1 ;;
         esac
     fi
-    task_docker_deploy
-    [ ! $pre_deploy ] || eval $pre_deploy
-    task_helm_deploy
+    if [[ push_container -eq 1 ]]; then
+        log_trace "pushing the docker registry"
+        task_docker_deploy
+    fi
+    if [[ deploy -eq 1 ]]; then
+        log_trace "pushing to helm"
+        [ ! $pre_deploy ] || eval $pre_deploy
+        task_helm_deploy
+    fi
 }
 
 # process the input arguments
