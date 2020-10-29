@@ -216,8 +216,10 @@ function process_args() {
             * ) break ;;
         esac
     done
-    [[ $helm_chart ]] ||  { log_error "helm chart is a required" >&2; exit 1; }
-    [[ $helm_release_name ]] || helm_release_name=$helm_chart
+    if [[ deploy -eq 1 ]]; then
+        [[ $helm_chart ]] ||  { log_error "helm chart is a required" >&2; exit 1; }
+        [[ $helm_release_name ]] || helm_release_name=$helm_chart
+    fi
 }
 
 function run_tasks(){
