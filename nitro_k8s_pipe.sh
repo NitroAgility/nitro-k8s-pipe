@@ -233,15 +233,22 @@ function run_tasks(){
     if [[ install -eq 1 ]]; then
         log_trace "insalling required tools"
         task_os_tools_install
-        task_k8s_tools_install
-        task_helm_install
+        if [[ deploy -eq 1 ]]; then
+            task_k8s_tools_install
+            task_helm_install
+        fi
         case $infrastructure in
             aws)
                 log_trace "configuring aws infrastructure"
                 task_aws_cli_install
                 task_aws_cli_configure
-                task_aws_ecr_configure
-                task_aws_eks_configure ;;
+                if [[ push_container -eq 1 ]]; then
+                    task_aws_ecr_configure
+                fi
+                if [[ deploy -eq 1 ]]; then
+                    task_aws_eks_configure
+                fi 
+                log_trace "completed aws infrastructure configurations";;
             *) log_error "infrastructure $infrastructure is not supported" >&2 ; exit 1 ;;
         esac
     fi
