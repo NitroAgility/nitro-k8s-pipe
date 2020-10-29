@@ -204,7 +204,7 @@ function process_args() {
             --push-container) push_container=1; shift ;;
             --deploy) deploy=1; shift ;;
             --build-number) build_number="$2"; shift 2 ;;
-            --docker-file) docker_file="$2"; shift 2 ;
+            --docker-file) docker_file="$2"; shift 2 ;;
             --docker-build-args) docker_build_args=$(echo "$2" | base64 --decode); shift 2 ;;
             --docker-registry) docker_registry="$2"; shift 2 ;;
             --docker-registry-name) docker_registry_name="$2"; shift 2 ;;
