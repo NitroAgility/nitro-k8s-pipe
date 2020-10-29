@@ -160,9 +160,9 @@ function task_docker_deploy(){
     fi
     log_trace "Dockerfile $docker_file"
     if [[ $docker_build_args ]]; then
-        eval "docker build -t $docker_registry_name:latest . $docker_build_args"
+        eval "docker build -t $docker_registry_name:latest . $docker_build_args -f $docker_file"
     else
-        docker build -t $docker_registry_name:latest .
+        eval "docker build -t $docker_registry_name:latest . -f $docker_file"
     fi
     docker tag $docker_registry_name:latest $docker_registry/$docker_registry_name:latest
     docker push $docker_registry/$docker_registry_name:latest
