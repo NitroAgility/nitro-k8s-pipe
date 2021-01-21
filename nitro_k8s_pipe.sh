@@ -36,6 +36,7 @@ docker_registry=
 docker_registry_name=
 os=ubuntu
 infrastructure=aws
+infrastructure_region=eu-west-2
 k8s_cluster=
 helm_chart=
 helm_release_name=
@@ -65,6 +66,7 @@ function usage()
                 --deploy                deploy the container
                 --os                    override operating system (defaults to $os)
                 --infrastructure        override infrastructure (defaults to $infrastructure)
+                --infrastructure-region override infrastructure region (defaults to $infrastructure_region)
                 --build-number          build number
                 --docker-file           docker file
                 --docker-build-args     docker build arguments
@@ -146,12 +148,12 @@ function task_aws_cli_configure(){
 
 function task_aws_ecr_configure(){
     log_trace "configuring to connect to the aws docker registry"
-    aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin $docker_registry
+    aws ecr get-login-password --region $infrastructure_region | docker login --username AWS --password-stdin $docker_registry
 }
 
 function task_aws_eks_configure(){
     log_trace "configuring kubeclt to connect to the aws eks cluster"
-    aws eks --region eu-west-2 update-kubeconfig --name $k8s_cluster
+    aws eks --region $infrastructure_region update-kubeconfig --name $k8s_cluster
 }
 
 function task_docker_deploy(){
@@ -191,7 +193,7 @@ function task_helm_deploy(){
 function process_args() {
     # parse options
     SHORT=nvs:io:h
-    LONG=dry-run,verbose,help,install-tools,push-container,deploy,source:,build-number:,docker-build-args:,docker-file:,docker-registry:,docker-registry-name:,os:,infrastructure:,cluster:,chart:,release:,namespace:,uninstall,pre-deploy:,aws-key:,aws-secret:
+    LONG=dry-run,verbose,help,install-tools,push-container,deploy,source:,build-number:,docker-build-args:,docker-file:,docker-registry:,docker-registry-name:,os:,infrastructure:,infrastructure-region:,cluster:,chart:,release:,namespace:,uninstall,pre-deploy:,aws-key:,aws-secret:
     OPTS=$(getopt --options $SHORT --long $LONG --name "$0" -- "$@")
     if [ $? != 0 ] ; then log_error "Failed to parse options" >&2 ; exit 1 ; fi
     eval set -- "$OPTS"
@@ -210,6 +212,7 @@ function process_args() {
             --docker-registry-name) docker_registry_name="$2"; shift 2 ;;
             --os) os="$2"; shift 2 ;;
             --infrastructure) infrastructure="$2"; shift 2 ;;
+            --infrastructure-region) infrastructure_region="$2"; shift 2 ;;
             --cluster) k8s_cluster="$2"; shift 2 ;;
             --chart) helm_chart="$2"; shift 2 ;;
             --release) helm_release_name="$2"; shift 2 ;;
